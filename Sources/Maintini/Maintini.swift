@@ -3,8 +3,8 @@
 
     @MainActor
     public enum Maintini {
-        public static func setup()
-        public static func maintain(block _: () -> Void) {}
+        public static func setup() {}
+        public static func maintain(_: () -> Void) {}
         public static func startMaintaining() {}
         public static func endMaintaining() {}
     }
