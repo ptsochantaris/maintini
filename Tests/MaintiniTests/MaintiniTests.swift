@@ -2,6 +2,5 @@
 import XCTest
 
 final class MaintiniTests: XCTestCase {
-    func testMaintini() throws {
-    }
+    func testMaintini() throws {}
 }

@@ -3,6 +3,7 @@
 
     @MainActor
     public enum Maintini {
+        public static func setup()
         public static func maintain(block _: () -> Void) {}
         public static func startMaintaining() {}
         public static func endMaintaining() {}
@@ -13,6 +14,24 @@
 
     @MainActor
     public enum Maintini {
+        public static func setup() {
+            if foregroundObserver == nil {
+                foregroundObserver = NotificationCenter.default
+                    .publisher(for: UIApplication.willEnterForegroundNotification)
+                    .sink { _ in
+                        unPush()
+                        appInBackground = false
+                        endTask()
+                    }
+            }
+            if backgroundObserver == nil {
+                backgroundObserver = NotificationCenter.default
+                    .publisher(for: UIApplication.didEnterBackgroundNotification)
+                    .sink { _ in
+                        appBackgrounded()
+                    }
+            }
+        }
 
         public static func maintain(block: () -> Void) {
             startMaintaining()
@@ -36,6 +55,8 @@
             }
         }
 
+        private static var foregroundObserver: Cancellable?
+        private static var backgroundObserver: Cancellable?
         private static var bgTask = UIBackgroundTaskIdentifier.invalid
         private static var globalBackgroundCount = 0
         private static var appInBackground = UIApplication.shared.applicationState == .background
@@ -48,22 +69,6 @@
                 // log("BG Task starting")
                 bgTask = UIApplication.shared.beginBackgroundTask {
                     endTask()
-                }
-            }
-        }
-
-        private static var observerTask: Task<Void, Never> = Task {
-            let nc = NotificationCenter.default
-            Task {
-                for await _ in nc.notifications(named: UIApplication.willEnterForegroundNotification) {
-                    unPush()
-                    appInBackground = false
-                    endTask()
-                }
-            }
-            Task {
-                for await _ in nc.notifications(named: UIApplication.didEnterBackgroundNotification) {
-                    appBackgrounded()
                 }
             }
         }
