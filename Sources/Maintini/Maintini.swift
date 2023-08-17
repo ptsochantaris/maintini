@@ -4,7 +4,7 @@
     @MainActor
     public enum Maintini {
         public static func setup() {}
-        public static func maintain(_: () -> Void) {}
+        public static func maintain(_: () async -> Void) async {}
         public static func startMaintaining() {}
         public static func endMaintaining() {}
     }
@@ -33,9 +33,9 @@
             }
         }
 
-        public static func maintain(block: () -> Void) {
+        public static func maintain(block: () async -> Void) async {
             startMaintaining()
-            block()
+            await block()
             endMaintaining()
         }
 
