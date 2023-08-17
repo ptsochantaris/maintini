@@ -1,3 +1,5 @@
+<img src="https://ptsochantaris.github.io/trailer/MaintiniLogo.webp" alt="Logo" width=256 align="right">
+
 # Maintini
 
 Maintain iOS app activity for a short time if needed after the app is backgrounded.
