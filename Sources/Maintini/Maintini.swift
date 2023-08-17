@@ -3,9 +3,9 @@
 
     @MainActor
     public enum Maintini {
-        public static func registerForBackground() {}
-        public static func unregisterForBackground() {}
         public static func maintain(block _: () -> Void) {}
+        public static func startMaintaining() {}
+        public static func stopMaintaining() {}
     }
 #else
     import Combine
