@@ -5,7 +5,7 @@
     public enum Maintini {
         public static func maintain(block _: () -> Void) {}
         public static func startMaintaining() {}
-        public static func stopMaintaining() {}
+        public static func endMaintaining() {}
     }
 #else
     import Combine
@@ -17,7 +17,7 @@
         public static func maintain(block: () -> Void) {
             startMaintaining()
             block()
-            stopMaintaining()
+            endMaintaining()
         }
 
         public static func startMaintaining() {
@@ -29,7 +29,7 @@
             }
         }
 
-        public static func stopMaintaining() {
+        public static func endMaintaining() {
             globalBackgroundCount -= 1
             if globalBackgroundCount == 0, bgTask != .invalid {
                 push()
