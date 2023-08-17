@@ -20,7 +20,7 @@ Maintini.setup() // Always call this at app launch to set things up
 
 ...
 
-func anExampleWithABlockCall() aync {
+func anExampleWithABlockCall() async {
     await Maintini.maintain {
         await processingThatShouldNotBeInterrupted()
     }
