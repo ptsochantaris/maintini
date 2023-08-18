@@ -2,7 +2,7 @@
 
 # Maintini
 
-Maintain iOS app activity for a short time if needed after the app is backgrounded.
+A friendly and efficient wrapper to protect iOS app operations for a short time when backgrounded.
 
 Currently used in
 - [Trailer](https://github.com/ptsochantaris/trailer)

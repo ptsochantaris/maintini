@@ -7,13 +7,13 @@ let package = Package(
     platforms: [
         .macOS(.v11),
         .iOS(.v15),
-        .watchOS(.v7),
+        .watchOS(.v7)
     ],
     products: [
         .library(
             name: "Maintini",
             targets: ["Maintini"]
-        ),
+        )
     ],
     targets: [
         .target(
@@ -21,6 +21,6 @@ let package = Package(
         .testTarget(
             name: "MaintiniTests",
             dependencies: ["Maintini"]
-        ),
+        )
     ]
 )
