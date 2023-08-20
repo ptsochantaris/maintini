@@ -1,12 +1,6 @@
-<img src="https://ptsochantaris.github.io/trailer/MaintiniLogo.webp" alt="Logo" width=256 align="right">
+# ``Maintini``
 
-# Maintini
-
-A friendly and efficient wrapper to protect iOS app operations for a short time when backgrounded.
-
-Currently used in
-- [Trailer](https://github.com/ptsochantaris/trailer)
-- [Gladys](https://github.com/ptsochantaris/gladys)
+A friendly and efficient wrapper to protect iOS app operations for a short time when backgrounded
 
 ## Overview
 
@@ -17,15 +11,13 @@ Currently used in
 - Maintini will build on macOS and is safe to use in shared code, but all calls to it on macOS build will be no-ops.
 
 ```
-Maintini.setup() // Always call this at app launch to set things up
-...
-
 func anExampleWithABlockCall() async {
     await Maintini.maintain {
         await processingThatShouldNotBeInterrupted()
     }
 }
-
+```
+```
 func anExampleWithADeferredCall() async {
     Maintini.startMaintaining()
     defer {
@@ -33,7 +25,8 @@ func anExampleWithADeferredCall() async {
     }
     await processingThatShouldNotBeInterrupted()
 }
-
+```
+```
 func anExampleWithNestedCalls() async {
     Maintini.startMaintaining()
 
@@ -47,8 +40,16 @@ func anExampleWithNestedCalls() async {
         Maintini.endMaintaining()
     }
 }
-
 ```
 
-## License
-Copyright (c) 2023 Paul Tsochantaris. Licensed under the MIT License, see LICENSE for details.
+## Topics
+
+### Setup
+- ``Maintini/Maintini/setup()``
+
+### Signaling the start and end of a session
+- ``Maintini/Maintini/startMaintaining()``
+- ``Maintini/Maintini/endMaintaining()``
+
+### Using block syntax
+- ``Maintini/Maintini/maintain(block:)``
