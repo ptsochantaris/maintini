@@ -1,6 +1,6 @@
 import Combine
 import Foundation
-#if !os(macOS)
+#if !(os(macOS) || os(watchOS))
     import UIKit
 #endif
 
@@ -13,7 +13,7 @@ public enum Maintini {
     /// Maintini.setup()
     /// ```
     public static func setup() {
-        #if !os(macOS)
+        #if !(os(macOS) || os(watchOS))
             if foregroundObserver == nil {
                 foregroundObserver = NotificationCenter.default
                     .publisher(for: UIApplication.willEnterForegroundNotification)
@@ -73,7 +73,7 @@ public enum Maintini {
     ///
     /// Repeated parallel start/end sessions are possible, but do note that they will not extend the app's maximum lifetime while in the background.
     public static func startMaintaining() {
-        #if !os(macOS)
+        #if !(os(macOS) || os(watchOS))
             unPush()
             let count = globalBackgroundCount
             globalBackgroundCount = count + 1
@@ -91,7 +91,7 @@ public enum Maintini {
     ///
     /// Start and end calls must always balance out. Consider using a `defer` block for safety, or the `Maintini` block syntax.
     public static func endMaintaining() {
-        #if !os(macOS)
+        #if !(os(macOS) || os(watchOS))
             globalBackgroundCount -= 1
             if globalBackgroundCount == 0, bgTask != .invalid {
                 push()
@@ -99,7 +99,7 @@ public enum Maintini {
         #endif
     }
 
-    #if !os(macOS)
+    #if !(os(macOS) || os(watchOS))
         private static var foregroundObserver: Cancellable?
         private static var backgroundObserver: Cancellable?
         private static var bgTask = UIBackgroundTaskIdentifier.invalid
