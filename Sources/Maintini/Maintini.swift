@@ -4,10 +4,10 @@ import Foundation
     import UIKit
 #endif
 
-/// An instance of `Maintini`. Note that on macOS all calls are no-ops.
+/// An instance of `Maintini`.
 @MainActor
 public enum Maintini {
-    /// Always call this at app launch to set things up, as `Maintini` needs to listen to app foregrounding or backgrounding notifications. Recommended place for this call is in `appDidFinishLaunching`
+    /// Always call this at iOS app launch to set things up, as `Maintini` needs to listen to app foregrounding or backgrounding notifications. Recommended place for this call is in `appDidFinishLaunching`. On macOS this is a no-op.
     ///
     /// ```
     /// Maintini.setup()
@@ -43,7 +43,7 @@ public enum Maintini {
     ///    }
     /// }
     /// ```
-    /// The code in this block must not have a long execution time or else iOS will suspend the app anyway.
+    /// On iOS-flavoured platforms the code in this block must not have a long execution time or else the OS will suspend the app anyway.
     ///
     /// This call can be made while the app is in the background due to other calls to `Maintini`: The app will try to stay active until the last maintini session has finished.
     ///
@@ -54,7 +54,7 @@ public enum Maintini {
         endMaintaining()
     }
 
-    /// Signal that from this point on, if needed, the app should stay active if put into the foreground, as long as iOS will allow.
+    /// Signal that from this point on, if needed, the app should stay active if put into the foreground, as long as iOS will allow. On macOS the system will not go into idle sleep while this is active, as long as user settings permit that.
     ///
     /// ```
     /// func anExampleWithADeferredCall() async {
@@ -67,63 +67,80 @@ public enum Maintini {
     /// ```
     /// All calls to this method _must_ be balanced with a call to ``endMaintaining()`` at some later point, or else `Maintini` will not work correctly.
     ///
-    /// The time period between this call and that one must not be long or else iOS will suspend the app anyway.
+    /// On iOS-flavoured platforms the time period between this call and that one must not be long or else the OS will suspend the app anyway.
     ///
-    /// This call can be made while the app is in the background due to other calls to `Maintini`: The app will try to stay active until the last `Maintini` session has finished.
+    /// This call can be made while the app is in the background as a consequence to other calls to `Maintini`: The effect will persist until the last `Maintini` session has finished.
     ///
-    /// Repeated parallel start/end sessions are possible, but do note that they will not extend the app's maximum lifetime while in the background.
+    /// Repeated parallel start/end sessions are possible, but do note that, on iOS, they will not extend the app's maximum lifetime while in the background.
     public static func startMaintaining() {
-        #if !(os(macOS) || os(watchOS))
+        #if !os(watchOS)
             unPush()
-            let count = globalBackgroundCount
-            globalBackgroundCount = count + 1
-            if appInBackground, bgTask == .invalid, count == 0 {
-                appBackgrounded()
+            let count = activityCount
+            activityCount = count + 1
+            if count == 0, !bgTask.isActive {
+                #if os(macOS)
+                    let task = ProcessInfo.processInfo.beginActivity(reason: "Maintini \(UUID().uuidString)")
+                    bgTask = .active(task)
+                #elseif os(iOS)
+                    if appInBackground {
+                        appBackgrounded()
+                    }
+                #endif
             }
         #endif
     }
 
     /// Signal that whatever task needed the app to stay active is done now.
     ///
-    /// `Maintini` will start a two second countdown and if there are no other background tasks it will allow the app to be suspended.
+    /// `Maintini` will start a two second countdown and if there are no other background tasks it will allow the app to be suspended in the background. On macOS this tells the system that it can sleep if it wants to.
     ///
-    /// Please note that it is possible that iOS will suspend the app even before this method is called, if the app takes too long to call this method. In this case a call to this method _must still be made_ regardless.
+    /// Please note that it is possible that, on iOS-flavoured platforms, the OS can suspend the app even before this method is called, if the app takes too long to call this method. In this case a call to this method _must still be made_ regardless.
     ///
-    /// Start and end calls must always balance out. Consider using a `defer` block for safety, or the `Maintini` block syntax.
+    /// Start and end calls must always balance out. Consider using a `defer` block for safety, or the `Maintini` block syntax variant ``maintain(block:)``.
     public static func endMaintaining() {
-        #if !(os(macOS) || os(watchOS))
-            globalBackgroundCount -= 1
-            if globalBackgroundCount == 0, bgTask != .invalid {
+        #if !os(watchOS)
+            activityCount -= 1
+            if activityCount == 0, bgTask.isActive {
                 push()
             }
         #endif
     }
 
-    #if !(os(macOS) || os(watchOS))
-        private static var foregroundObserver: Cancellable?
-        private static var backgroundObserver: Cancellable?
-        private static var bgTask = UIBackgroundTaskIdentifier.invalid
-        private static var globalBackgroundCount = 0
-        private static var appInBackground = UIApplication.shared.applicationState == .background
-        private static let publisher = PassthroughSubject<Void, Never>()
-        private static var cancel: Cancellable?
+    #if !os(watchOS)
+        private enum State {
+            #if os(macOS)
+                case active(NSObjectProtocol)
+            #elseif os(iOS)
+                case active(UIBackgroundTaskIdentifier)
+            #endif
+            case inactive
 
-        private static func appBackgrounded() {
-            appInBackground = true
-            if globalBackgroundCount != 0, bgTask == .invalid {
-                // log("BG Task starting")
-                bgTask = UIApplication.shared.beginBackgroundTask {
-                    endTask()
+            var isActive: Bool {
+                if case .inactive = self {
+                    return true
                 }
+                return false
             }
         }
 
+        private static var bgTask = State.inactive
+        private static var activityCount = 0
+        private static var cancel: Cancellable?
+        private static let publisher = PassthroughSubject<Void, Never>()
+
         private static func endTask() {
-            if bgTask == .invalid { return }
-            // log("BG Task done")
-            unPush()
-            UIApplication.shared.endBackgroundTask(bgTask)
-            bgTask = .invalid
+            switch bgTask {
+            case .inactive:
+                return
+            case let .active(task):
+                unPush()
+                bgTask = .inactive
+                #if os(macOS)
+                    ProcessInfo.processInfo.endActivity(task)
+                #elseif os(iOS)
+                    UIApplication.shared.endBackgroundTask(task)
+                #endif
+            }
         }
 
         private static func push() {
@@ -141,5 +158,22 @@ public enum Maintini {
             cancel?.cancel()
             cancel = nil
         }
+
+        #if !os(macOS)
+            private static var foregroundObserver: Cancellable?
+            private static var backgroundObserver: Cancellable?
+            private static var appInBackground = UIApplication.shared.applicationState == .background
+
+            private static func appBackgrounded() {
+                appInBackground = true
+                if activityCount != 0, !bgTask.isActive {
+                    // log("BG Task starting")
+                    let task = UIApplication.shared.beginBackgroundTask {
+                        endTask()
+                    }
+                    bgTask = .active(task)
+                }
+            }
+        #endif
     #endif
 }
