@@ -116,10 +116,12 @@ public enum Maintini {
             case inactive
 
             var isActive: Bool {
-                if case .inactive = self {
+                switch self {
+                case .active:
                     return true
+                case .inactive:
+                    return false
                 }
-                return false
             }
         }
 
