@@ -1,6 +1,6 @@
 import Combine
 import Foundation
-#if !(os(macOS) || os(watchOS))
+#if canImport(UIKit) && !os(watchOS)
     import UIKit
 #endif
 
@@ -13,7 +13,7 @@ public enum Maintini {
     /// Maintini.setup()
     /// ```
     public static func setup() {
-        #if !(os(macOS) || os(watchOS))
+        #if canImport(UIKit) && !os(watchOS)
             if foregroundObserver == nil {
                 foregroundObserver = NotificationCenter.default
                     .publisher(for: UIApplication.willEnterForegroundNotification)
@@ -78,10 +78,10 @@ public enum Maintini {
             let count = activityCount
             activityCount = count + 1
             if count == 0, !bgTask.isActive {
-                #if os(macOS)
+                #if canImport(AppKit)
                     let task = ProcessInfo.processInfo.beginActivity(reason: "Maintini \(UUID().uuidString)")
                     bgTask = .active(task)
-                #elseif os(iOS)
+                #elseif canImport(UIKit)
                     if appInBackground {
                         appBackgrounded()
                     }
@@ -108,9 +108,9 @@ public enum Maintini {
 
     #if !os(watchOS)
         private enum State {
-            #if os(macOS)
+            #if canImport(AppKit)
                 case active(NSObjectProtocol)
-            #elseif os(iOS)
+            #elseif canImport(UIKit)
                 case active(UIBackgroundTaskIdentifier)
             #endif
             case inactive
@@ -137,9 +137,9 @@ public enum Maintini {
             case let .active(task):
                 unPush()
                 bgTask = .inactive
-                #if os(macOS)
+                #if canImport(AppKit)
                     ProcessInfo.processInfo.endActivity(task)
-                #elseif os(iOS)
+                #elseif canImport(UIKit)
                     UIApplication.shared.endBackgroundTask(task)
                 #endif
             }
@@ -161,7 +161,7 @@ public enum Maintini {
             cancel = nil
         }
 
-        #if !os(macOS)
+        #if canImport(UIKit)
             private static var foregroundObserver: Cancellable?
             private static var backgroundObserver: Cancellable?
             private static var appInBackground = UIApplication.shared.applicationState == .background
