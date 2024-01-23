@@ -118,9 +118,9 @@ public enum Maintini {
             var isActive: Bool {
                 switch self {
                 case .active:
-                    return true
+                    true
                 case .inactive:
-                    return false
+                    false
                 }
             }
         }
